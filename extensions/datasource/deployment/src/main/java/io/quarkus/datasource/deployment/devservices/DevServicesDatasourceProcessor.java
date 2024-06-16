@@ -2,6 +2,7 @@ package io.quarkus.datasource.deployment.devservices;
 
 import java.io.Closeable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +51,8 @@ public class DevServicesDatasourceProcessor {
 
     // list of devservices properties we should not check for restart
     // see issue #30390
-    private static final Set<String> EXCLUDED_PROPERTIES = Set.of("quarkus.datasource.devservices.enabled");
+    private static final Set<String> EXCLUDED_PROPERTIES = Set.of("quarkus.datasource.devservices.enabled",
+            "quarkus.datasource.devservices.reuse");
 
     static volatile List<RunningDevService> databases;
 
@@ -79,8 +81,13 @@ public class DevServicesDatasourceProcessor {
             boolean restartRequired = false;
             if (!restartRequired) {
                 for (Map.Entry<String, String> entry : cachedProperties.entrySet()) {
-                    if (!Objects.equals(entry.getValue(),
-                            trim(ConfigProvider.getConfig().getOptionalValue(entry.getKey(), String.class).orElse(null)))) {
+                    String value = ConfigProvider.getConfig()
+                            .getOptionalValue(entry.getKey(), String.class)
+                            .orElse(null);
+                    if (value == null) {
+                        value = getValueWithOrWithoutQuotes(entry.getKey(), dataSourcesBuildTimeConfig.dataSources().keySet());
+                    }
+                    if (!Objects.equals(entry.getValue(), trim(value))) {
                         restartRequired = true;
                         break;
                     }
@@ -177,6 +184,33 @@ public class DevServicesDatasourceProcessor {
             devServicesResultBuildItemBuildProducer.produce(database.toBuildItem());
         }
         return new DevServicesDatasourceResultBuildItem(results);
+    }
+
+    /**
+     * Gets the value of the given key trying to quote the datasource if unquoted, and unquote it if quoted
+     * @param key key to get
+     * @param datasources datasources to try to quote and unqote
+     * @return the value or else otherwise
+     */
+    private static String getValueWithOrWithoutQuotes(String key, Collection<String> datasources) {
+        for (String datasource : datasources) {
+            if (!DataSourceUtil.isDefault(datasource) && key.contains(datasource)) {
+                String quoted = ".\"" + datasource + "\".";
+                String unquoted = "." + datasource + ".";
+                if (key.contains(quoted)) {
+                    String entryWithoutQuote = key.replace(quoted, unquoted);
+                    return ConfigProvider.getConfig()
+                            .getOptionalValue(entryWithoutQuote, String.class)
+                            .orElse(null);
+                } else {
+                    String entryWithQuotes = key.replace(unquoted, quoted);
+                    return ConfigProvider.getConfig()
+                            .getOptionalValue(entryWithQuotes, String.class)
+                            .orElse(null);
+                }
+            }
+        }
+        return null;
     }
 
     private String trim(String optional) {
