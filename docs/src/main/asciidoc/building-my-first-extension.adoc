@@ -427,10 +427,10 @@ include 'runtime', 'deployment' <2>
 
 rootProject.name = 'greeting-extension'
 ----
-****
-
 <1> Configure the quarkus extension plugin version
 <2> Include both `runtime` and `deployment` modules
+****
+
 
 [role="secondary asciidoc-tabs-sync-kotlin"]
 .Kotlin DSL
@@ -451,10 +451,10 @@ include("runtime", "deployment") <2>
 
 rootProject.name = "greeting-extension"
 ----
-****
-
 <1> Configure the quarkus extension plugin version
 <2> Include both `runtime` and `deployment` modules
+****
+
 
 NOTE: For kotlin add the `.kts` extension the build files, for example: `settings.gradle.kts`
 
@@ -473,11 +473,11 @@ subprojects {
     version '1.0-SNAPSHOT'
 }
 ----
-****
-
 <1> Apply the `java-library` plugin for all sub-modules
 <2> Apply the `maven-publish` plugin used to publish our artifacts
 <3> Globally set the group id used for publication
+****
+
 
 [role="secondary asciidoc-tabs-sync-kotlin"]
 .Kotlin DSL
@@ -492,11 +492,11 @@ subprojects {
     version = "1.0-SNAPSHOT"
 }
 ----
-****
-
 <1> Apply the `java-library` plugin for all sub-modules
 <2> Apply the `maven-publish` plugin used to publish our artifacts
 <3> Globally set the group id used for publication
+****
+
 
 The `io.quarkus.extension` plugin will be used in order to help us building the extension.
 The plugin will *only* be applied to the `runtime` module.
@@ -504,7 +504,7 @@ The plugin will *only* be applied to the `runtime` module.
 ==== The deployment module
 
 The deployment module does not require any specific plugin.
-Here is an example of a minimal gradle build file for the `deployment` module:
+Here is an example of a minimal Gradle build file for the `deployment` module:
 
 [role="primary asciidoc-tabs-sync-groovy"]
 .Groovy DSL
@@ -520,10 +520,10 @@ dependencies {
     testImplementation 'io.quarkus:quarkus-junit5-internal'
 }
 ----
-****
-
 <1> By convention, the deployment module has the `-deployment` suffix (`greeting-extension-deployment`).
 <2> The deployment module *must* depend on the `runtime` module.
+****
+
 
 [role="secondary asciidoc-tabs-sync-kotlin"]
 .Kotlin DSL
@@ -538,9 +538,9 @@ dependencies {
     testImplementation("io.quarkus:quarkus-junit5-internal")
 }
 ----
+<1> The deployment module *must* depend on the `runtime` module.
 ****
 
-<1> The deployment module *must* depend on the `runtime` module.
 
 ==== The runtime module
 
