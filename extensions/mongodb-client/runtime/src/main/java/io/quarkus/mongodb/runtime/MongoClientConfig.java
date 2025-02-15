@@ -133,6 +133,20 @@ public interface MongoClientConfig {
     boolean tls();
 
     /**
+     * The name of the TLS configuration to use.
+     * <p>
+     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
+     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * <p>
+     * If no TLS configuration is set, and {@code quarkus.tls.*} is not configured, then no tls configuration will be
+     * applied
+     * <p>
+     * Important: This is only applied when {@code quarkus.mongodb.tls } is set to true
+     */
+    Optional<String> tlsConfigurationName();
+
+    /**
      * Implies that the hosts given are a seed list, and the driver will attempt to find all members of the set.
      */
     Optional<String> replicaSetName();
