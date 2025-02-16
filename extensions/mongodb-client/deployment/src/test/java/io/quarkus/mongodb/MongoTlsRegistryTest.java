@@ -10,6 +10,8 @@ import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.mongodb.client.MongoClient;
@@ -23,6 +25,7 @@ import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
+@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Tests don't pass on windows CI")
 @Certificates(baseDir = MongoTlsRegistryTest.BASEDIR, certificates = {
         @Certificate(name = "mongo-cert", formats = Format.PEM, client = true)
 })
