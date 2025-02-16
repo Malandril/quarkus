@@ -2,7 +2,6 @@ package io.quarkus.mongodb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -10,8 +9,6 @@ import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.mongodb.client.MongoClient;
@@ -21,25 +18,39 @@ import de.flapdoodle.embed.mongo.transitions.ImmutableMongod;
 import de.flapdoodle.reverse.transitions.Start;
 import io.quarkus.mongodb.reactive.ReactiveMongoClient;
 import io.quarkus.test.QuarkusUnitTest;
+import io.smallrye.certs.CertificateGenerator;
+import io.smallrye.certs.CertificateRequest;
 import io.smallrye.certs.Format;
-import io.smallrye.certs.junit5.Certificate;
-import io.smallrye.certs.junit5.Certificates;
 
-@DisabledOnOs(value = OS.WINDOWS, disabledReason = "Tests don't pass on windows CI")
-@Certificates(baseDir = MongoTlsRegistryTest.BASEDIR, certificates = {
-        @Certificate(name = "mongo-cert", formats = Format.PEM, client = true)
-})
 public class MongoTlsRegistryTest extends MongoTestBase {
-    static final String BASEDIR = "target/certs";
+    static final Path BASEDIR;
+    static {
+        try {
+            CertificateRequest request = new CertificateRequest()
+                    .withName("mongo-cert")
+                    .withClientCertificate()
+                    .withFormat(Format.PEM);
+            BASEDIR = Files.createTempDirectory("mongo");
+            new CertificateGenerator(BASEDIR, false).generate(request);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final Path serverCertPath = BASEDIR.resolve("mongo-cert.crt");
+    private static final Path serverKeyPath = BASEDIR.resolve("mongo-cert.key");
+    private static final Path serverCaPath = BASEDIR.resolve("mongo-cert-server-ca.crt");
+    private static final Path serverCertKeyPath = BASEDIR.resolve("mongo-certkey.pem");
+    private static final Path clientCaPath = BASEDIR.resolve("mongo-cert-client-ca.crt");
+    private static final Path clientKeyPath = BASEDIR.resolve("mongo-cert-client.key");
+    private static final Path clientCertPath = BASEDIR.resolve("mongo-cert-client.crt");
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
-            .withConfigurationResource("tls-mongoclient.properties");
-    private static final Path BASEPATH = Path.of(BASEDIR);
-    private final Path serverCertPath = Path.of(BASEDIR, "mongo-cert.crt");
-    private final Path serverKeyPath = Path.of(BASEDIR, "mongo-cert.key");
-    private final Path serverCaPath = Path.of(BASEDIR, "mongo-cert-server-ca.crt");
-    private final Path serverCertKeyPath = Path.of(BASEDIR, "mongo-certkey.pem");
+            .overrideConfigKey("quarkus.tls.mongo.trust-store.pem.certs", clientCaPath.toAbsolutePath().toString())
+            .overrideConfigKey("quarkus.tls.mongo.key-store.pem.0.cert", clientCertPath.toAbsolutePath().toString())
+            .overrideConfigKey("quarkus.tls.mongo.key-store.pem.0.key", clientKeyPath.toAbsolutePath().toString());
+
     @Inject
     MongoClient client;
     @Inject
@@ -57,18 +68,25 @@ public class MongoTlsRegistryTest extends MongoTestBase {
 
     @Override
     protected ImmutableMongod addExtraConfig(ImmutableMongod mongo) {
-        try (var fos = Files.newOutputStream(serverCertKeyPath)) {
-            Files.copy(serverCertPath, fos);
-            Files.copy(serverKeyPath, fos);
-        } catch (IOException e) {
+
+        try {
+            try (var fos = Files.newOutputStream(serverCertKeyPath)) {
+                Files.copy(serverCertPath, fos);
+                Files.copy(serverKeyPath, fos);
+            }
+            return mongo.withMongodArguments(Start.to(mongo.mongodArguments().destination())
+                    .initializedWith(MongodArguments.builder()
+                            .putArgs("--tlsCertificateKeyFile",
+                                    serverCertKeyPath.toAbsolutePath()
+                                            .toString())
+                            .putArgs("--tlsMode", "requireTLS")
+                            .putArgs("--tlsCAFile",
+                                    serverCaPath.toAbsolutePath()
+                                            .toString())
+                            .build()));
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return mongo.withMongodArguments(Start.to(mongo.mongodArguments().destination())
-                .initializedWith(MongodArguments.builder()
-                        .putArgs("--tlsCertificateKeyFile", serverCertKeyPath.toAbsolutePath().toString())
-                        .putArgs("--tlsMode", "requireTLS")
-                        .putArgs("--tlsCAFile", serverCaPath.toAbsolutePath().toString())
-                        .build()));
 
     }
 
