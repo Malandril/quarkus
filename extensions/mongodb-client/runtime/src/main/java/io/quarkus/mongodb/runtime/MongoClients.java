@@ -235,7 +235,7 @@ public class MongoClients {
                     try {
                         builder.context(tlsConfig.get().createSSLContext());
                     } catch (Exception e) {
-                        throw new MongoConfigurationException("Could not configure mongo client with tls registry", e);
+                        throw new MongoConfigurationException("Could not configure MongoDB client with TLS registry", e);
                     }
                 }
             }
