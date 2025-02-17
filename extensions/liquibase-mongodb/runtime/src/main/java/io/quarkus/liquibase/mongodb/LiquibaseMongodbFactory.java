@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
+import io.quarkus.liquibase.mongodb.runtime.QuarkusMongoClientDriver;
 import io.quarkus.mongodb.runtime.MongoClientConfig;
 import io.quarkus.runtime.util.StringUtil;
 import liquibase.Contexts;
@@ -29,10 +30,12 @@ public class LiquibaseMongodbFactory {
 
     //connection-string format, see https://docs.mongodb.com/manual/reference/connection-string/
     Pattern HAS_DB = Pattern
-            .compile("(?<prefix>mongodb://|mongodb\\+srv://)(?<hosts>[^/]*)(?<slash>[/]?)(?<db>[^?]*)(?<options>\\??.*)");
+            .compile(
+                    "(?<prefix>mongodb://|mongodb\\+srv://)(?<hosts>[^/]*)(?<slash>[/]?)(?<db>[^?]*)(?<options>\\??.*)");
 
     public LiquibaseMongodbFactory(LiquibaseMongodbConfig config,
-            LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig, MongoClientConfig mongoClientConfig) {
+            LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig,
+            MongoClientConfig mongoClientConfig) {
         this.liquibaseMongodbConfig = config;
         this.liquibaseMongodbBuildTimeConfig = liquibaseMongodbBuildTimeConfig;
         this.mongoClientConfig = mongoClientConfig;
@@ -52,7 +55,9 @@ public class LiquibaseMongodbFactory {
         if (liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
             compositeResourceAccessor.addResourceAccessor(
                     new DirectoryResourceAccessor(
-                            Paths.get(StringUtil.changePrefix(liquibaseMongodbBuildTimeConfig.changeLog(), "filesystem:", ""))
+                            Paths.get(
+                                    StringUtil.changePrefix(liquibaseMongodbBuildTimeConfig.changeLog(), "filesystem:",
+                                            ""))
                                     .getParent()));
             return compositeResourceAccessor;
         }
@@ -111,14 +116,26 @@ public class LiquibaseMongodbFactory {
             if (!mongoClientConfig.credentials().authMechanismProperties().isEmpty()) {
                 boolean alreadyHasQueryParams = connectionString.contains("?");
                 connectionString += (alreadyHasQueryParams ? "&" : "?") + "authMechanismProperties="
-                        + mongoClientConfig.credentials().authMechanismProperties().entrySet().stream()
-                                .map(prop -> prop.getKey() + ":" + prop.getValue()).collect(Collectors.joining(","));
+                        + mongoClientConfig.credentials()
+                                .authMechanismProperties()
+                                .entrySet()
+                                .stream()
+                                .map(prop -> prop.getKey() + ":" + prop.getValue())
+                                .collect(Collectors.joining(","));
             }
 
             Database database = DatabaseFactory.getInstance().openDatabase(connectionString,
-                    this.mongoClientConfig.credentials().username().orElse(null),
-                    this.mongoClientConfig.credentials().password().orElse(null),
-                    null, resourceAccessor);
+                    this.mongoClientConfig.credentials()
+                            .username()
+                            .orElse(null),
+                    this.mongoClientConfig.credentials()
+                            .password()
+                            .orElse(null),
+                    QuarkusMongoClientDriver.class.getName(),
+                    null,
+                    null,
+                    null,
+                    resourceAccessor);
 
             if (database != null) {
                 liquibaseMongodbConfig.liquibaseCatalogName().ifPresent(database::setLiquibaseCatalogName);
