@@ -122,8 +122,13 @@ public interface MongoClientConfig {
 
     /**
      * If connecting with TLS, this option enables insecure TLS connections.
+     *
+     * @deprecated in favor of configuration at the tls registry level. See {@link #tlsConfigurationName()}
+     *             and quarkus tls registry hostname verification configuration
+     *             {@code quarkus.tls.hostname-verification-algorithm=NONE}.
      */
     @WithDefault("false")
+    @Deprecated
     boolean tlsInsecure();
 
     /**

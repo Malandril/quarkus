@@ -685,19 +685,20 @@ If you want to use SSL/TLS encryption, you need to add this property in your `ap
 quarkus.mongodb.tls=true
 ----
 
-You can configure the client to trust servers with certificates with invalid hostnames:
-
-[source,properties]
-----
-quarkus.mongodb.tls=true
-quarkus.mongodb.tls-insecure=true # only if TLS certificate cannot be validated
-----
-
 You can also configure the client to use a tls configuration from the TLS registry:
 
 [source,properties]
 ----
 quarkus.tls.mongo.trust-store.pem.certs=certa.pem,certb.pem
+quarkus.mongodb.tls=true
+quarkus.mongodb.tls-configuration-name=mongo
+----
+
+You can configure the client to trust servers with certificates with invalid hostnames:
+
+[source,properties]
+----
+quarkus.tls.mongo.hostname-verification-algorithm=NONE
 quarkus.mongodb.tls=true
 quarkus.mongodb.tls-configuration-name=mongo
 ----
