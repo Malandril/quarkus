@@ -317,4 +317,21 @@ public enum VertxMDC implements MDCProvider {
         return (ConcurrentMap<String, Object>) lcd.computeIfAbsent(VertxMDC.class.getName(),
                 k -> new ConcurrentHashMap<String, Object>());
     }
+
+    @SuppressWarnings("unchecked")
+    public void replaceWithoutKeys(Context ctx, String... keys) {
+        if (ctx == null) {
+            return;
+        }
+        ((ContextInternal) ctx).localContextData().compute(VertxMDC.class.getName(), (k, v) -> {
+            if (v == null) {
+                return new ConcurrentHashMap<String, Object>();
+            }
+            var copy = new ConcurrentHashMap<>((ConcurrentMap<String, Object>) v);
+            for (String key : keys) {
+                copy.remove(key);
+            }
+            return copy;
+        });
+    }
 }

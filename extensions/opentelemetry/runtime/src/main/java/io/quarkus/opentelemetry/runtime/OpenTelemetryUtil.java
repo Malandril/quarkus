@@ -108,10 +108,6 @@ public final class OpenTelemetryUtil {
      * @param vertxContext vertx context
      */
     public static void clearMDCData(io.vertx.core.Context vertxContext) {
-        VertxMDC vertxMDC = VertxMDC.INSTANCE;
-        vertxMDC.remove(TRACE_ID, vertxContext);
-        vertxMDC.remove(SPAN_ID, vertxContext);
-        vertxMDC.remove(PARENT_ID, vertxContext);
-        vertxMDC.remove(SAMPLED, vertxContext);
+        VertxMDC.INSTANCE.replaceWithoutKeys(vertxContext, TRACE_ID, SPAN_ID, PARENT_ID, SAMPLED);
     }
 }
