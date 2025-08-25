@@ -280,7 +280,12 @@ public enum VertxMDC implements MDCProvider {
      * If the informed context is null it falls back to the thread local context map.
      */
     public void clear(Context vertxContext) {
-        contextualDataMap(vertxContext).clear();
+        if (vertxContext == null) {
+            inheritableThreadLocalMap.get().clear();
+        } else {
+            ConcurrentMap<Object, Object> lcd = Objects.requireNonNull((ContextInternal) vertxContext).localContextData();
+            lcd.remove(VertxMDC.class.getName());
+        }
     }
 
     /**
